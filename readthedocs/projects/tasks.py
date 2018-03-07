@@ -27,10 +27,6 @@ from django.utils.translation import ugettext_lazy as _
 from readthedocs_build.config import ConfigError
 from slumber.exceptions import HttpClientError
 
-from .constants import LOG_TEMPLATE
-from .exceptions import RepositoryError
-from .models import ImportedFile, Project, Domain
-from .signals import before_vcs, after_vcs, before_build, after_build
 from readthedocs.builds.constants import (LATEST,
                                           BUILD_STATE_CLONING,
                                           BUILD_STATE_INSTALLING,
@@ -57,6 +53,20 @@ from readthedocs.restapi.utils import index_search_request
 from readthedocs.search.parse_json import process_all_json_files
 from readthedocs.vcs_support import utils as vcs_support_utils
 from readthedocs.worker import app
+
+from .constants import LOG_TEMPLATE
+from .exceptions import RepositoryError
+from .models import ImportedFile, Project, Domain
+from .signals import (
+    before_vcs,
+    after_vcs,
+    before_build,
+    after_build,
+    before_build_env,
+    after_build_env,
+    before_setup_env,
+    after_setup_env,
+)
 
 
 log = logging.getLogger(__name__)
@@ -327,6 +337,7 @@ class UpdateDocsTask(SyncRepositoryMixin, Task):
 
         # Environment used for code checkout & initial configuration reading
         with self.setup_env:
+            before_setup_env.send(self.__class__, env=self.setup_env)
             if self.project.skip:
                 raise BuildEnvironmentError(
                     _('Builds for this project are temporarily disabled'))
@@ -345,6 +356,7 @@ class UpdateDocsTask(SyncRepositoryMixin, Task):
                 raise BuildEnvironmentError(
                     'Problem parsing YAML configuration. {0}'.format(str(e))
                 )
+            after_setup_env.send(self.__class__, env=self.setup_env)
 
         if self.setup_env.failure or self.config is None:
             self._log('Failing build because of setup failure: %s' % self.setup_env.failure)
@@ -384,6 +396,8 @@ class UpdateDocsTask(SyncRepositoryMixin, Task):
             if self.project.documentation_type == 'auto':
                 self.update_documentation_type()
 
+            before_build_env.send(self.__class__, env=self.build_env)
+
             python_env_cls = Virtualenv
             if self.config.use_conda:
                 self._log('Using conda')
@@ -413,6 +427,8 @@ class UpdateDocsTask(SyncRepositoryMixin, Task):
                 )
             else:
                 log.warning('No build ID, not syncing files')
+
+            after_build_env.send(self.__class__, env=self.build_env)
 
         if self.build_env.failed:
             self.send_notifications()

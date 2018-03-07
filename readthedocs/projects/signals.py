@@ -15,6 +15,11 @@ after_build = django.dispatch.Signal(providing_args=["version"])
 
 project_import = django.dispatch.Signal(providing_args=["project"])
 
+before_build_env = django.dispatch.Signal(providing_args=['env'])
+after_build_env = django.dispatch.Signal(providing_args=['env'])
+before_setup_env = django.dispatch.Signal(providing_args=['env'])
+after_setup_env = django.dispatch.Signal(providing_args=['env'])
+
 
 @receiver(project_import)
 def handle_project_import(sender, **kwargs):
@@ -23,3 +28,10 @@ def handle_project_import(sender, **kwargs):
     request = kwargs.get('request')
 
     attach_webhook(project=project, request=request)
+
+
+@receiver(before_setup_env)
+def run_ssh_agent(sender, **kwargs):
+    """Run SSH agent on setup env start"""
+    env = kwargs.pop('env')
+    env.run('echo', 'foobar')
