@@ -39,6 +39,7 @@ from readthedocs.builds.constants import (LATEST,
 from readthedocs.builds.models import Build, Version, APIVersion
 from readthedocs.builds.signals import build_complete
 from readthedocs.builds.syncers import Syncer
+from readthedocs.core.utils import safe_makedirs
 from readthedocs.cdn.purge import purge
 from readthedocs.core.resolver import resolve_path
 from readthedocs.core.symlink import PublicSymlink, PrivateSymlink
@@ -92,7 +93,7 @@ class SyncRepositoryMixin(object):
         """Update the project's repository and hit ``sync_versions`` API."""
         # Make Dirs
         if not os.path.exists(self.project.doc_path):
-            os.makedirs(self.project.doc_path)
+            safe_makedirs(self.project.doc_path)
 
         if not self.project.vcs_repo():
             raise RepositoryError(
@@ -316,7 +317,7 @@ class UpdateDocsTask(SyncRepositoryMixin, Task):
 
         Return True if successful.
         """
-        self.setup_env = LocalBuildEnvironment(
+        self.setup_env = DockerBuildEnvironment(
             project=self.project,
             version=self.version,
             build=self.build,
