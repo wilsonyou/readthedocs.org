@@ -43,7 +43,7 @@ copyright = '2010-{}, Read the Docs, Inc & contributors'.format(
 version = '1.0'
 release = '1.0'
 exclude_patterns = ['_build']
-default_role = 'obj'
+default_role = None
 pygments_style = 'sphinx'
 intersphinx_mapping = {
     'python': ('http://python.readthedocs.io/en/latest/', None),
