@@ -1,6 +1,6 @@
 var ko = require('knockout');
 var $ = require('jquery');
-var tasks = require('readthedocs/core/static-src/core/js/tasks');
+var tasks = require('../../../../core/static-src/core/js/tasks');
 
 
 $(function () {

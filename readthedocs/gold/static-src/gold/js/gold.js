@@ -1,7 +1,7 @@
 // Gold payment views
 
 var jquery = require('jquery');
-var payment = require('readthedocs/payments/static-src/payments/js/base');
+var payment = require('../../../../payments/static-src/payments/js/base');
 var ko = require('knockout');
 
 function GoldView(config) {

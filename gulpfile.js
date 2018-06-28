@@ -4,9 +4,7 @@ var gulp = require('gulp'),
     rename = require('gulp-rename'),
     run = require('gulp-run'),
     less = require('gulp-less'),
-    bower_resolve = require('bower-resolve'),
     browserify = require('browserify'),
-    debowerify = require('debowerify'),
     uglify = require('gulp-uglify'),
     vinyl_source = require('vinyl-source-stream'),
     vinyl_buffer = require('vinyl-buffer'),
@@ -21,36 +19,25 @@ var gulp = require('gulp'),
 var sources = {
     builds: {'js/detail.js': {}},
     core: {
-        'js/readthedocs-doc-embed.js': {expose: false},
-        'js/autocomplete.js': {},
+        'js/readthedocs-doc-embed.js': {},
         'js/site.js': {},
-        'css/badge_only.css': {src: 'bower_components/sphinx-rtd-theme/sphinx_rtd_theme/static/css/badge_only.css'},
-        'css/theme.css': {src: 'bower_components/sphinx-rtd-theme/sphinx_rtd_theme/static/css/theme.css'},
+        'css/badge_only.css': {src: 'node_modules/sphinx_rtd_theme/sphinx_rtd_theme/static/css/badge_only.css'},
+        'css/theme.css': {src: 'node_modules/sphinx_rtd_theme/sphinx_rtd_theme/static/css/theme.css'},
 
-        'font/Lato-Bold.ttf': {src: 'bower_components/lato-googlefont/Lato-Bold.ttf'},
-        'font/Lato-Regular.ttf': {src: 'bower_components/lato-googlefont/Lato-Regular.ttf'},
-        'font/Lato-Italic.ttf': {src: 'bower_components/lato-googlefont/Lato-Italic.ttf'},
-        'font/Inconsolata-Bold.ttf': {src: 'bower_components/inconsolata-googlefont/Inconsolata-Bold.ttf'},
-        'font/Inconsolata-Regular.ttf': {src: 'bower_components/inconsolata-googlefont/Inconsolata-Regular.ttf'},
-        'font/RobotoSlab-Bold.ttf': {src: 'bower_components/robotoslab-googlefont/RobotoSlab-Bold.ttf'},
-        'font/RobotoSlab-Regular.ttf': {src: 'bower_components/robotoslab-googlefont/RobotoSlab-Regular.ttf'},
-        'font/FontAwesome.otf': {src: 'bower_components/font-awesome/FontAwesome.otf'},
-
-        'font/fontawesome-webfont.eot': {src: 'bower_components/font-awesome/fonts/fontawesome-webfont.eot'},
-        'font/fontawesome-webfont.svg': {src: 'bower_components/font-awesome/fonts/fontawesome-webfont.svg'},
-        'font/fontawesome-webfont.ttf': {src: 'bower_components/font-awesome/fonts/fontawesome-webfont.ttf'},
-        'font/fontawesome-webfont.woff': {src: 'bower_components/font-awesome/fonts/fontawesome-webfont.woff'},
-        'font/fontawesome-webfont.woff2': {src: 'bower_components/font-awesome/fonts/fontawesome-webfont.woff2'},
-        'font/FontAwesome.otf': {src: 'bower_components/font-awesome/fonts/FontAwesome.otf'}
+        'font/fontawesome-webfont.eot': {src: 'node_modules/font-awesome/fonts/fontawesome-webfont.eot'},
+        'font/fontawesome-webfont.svg': {src: 'node_modules/font-awesome/fonts/fontawesome-webfont.svg'},
+        'font/fontawesome-webfont.ttf': {src: 'node_modules/font-awesome/fonts/fontawesome-webfont.ttf'},
+        'font/fontawesome-webfont.woff': {src: 'node_modules/font-awesome/fonts/fontawesome-webfont.woff'},
+        'font/fontawesome-webfont.woff2': {src: 'node_modules/font-awesome/fonts/fontawesome-webfont.woff2'},
+        'font/FontAwesome.otf': {src: 'node_modules/font-awesome/fonts/FontAwesome.otf'}
     },
     projects: {
         'js/tools.js': {},
         'js/import.js': {},
         'css/import.less': {},
-        'css/admin.less': {},
+        'css/admin.less': {}
     },
-    gold: {'js/gold.js': {}},
-    donate: {'js/donate.js': {}}
+    gold: {'js/gold.js': {}}
 };
 
 // Standalone application to create vendor bundles for. These can be imported
@@ -69,57 +56,53 @@ function build_app_sources (application, minify) {
     // Normalize file glob lists
     var bundles = Object.keys(sources[application]).map(function (entry_path) {
         var bundle_path = path.join(
-                pkg_config.name, application, 'static-src', '**', entry_path),
+                pkg_config.name, application, 'static-src', application, entry_path),
+            output_path = path.join(application, entry_path),
             bundle_config = sources[application][entry_path] || {},
             bundle;
 
         if (/\.js$/.test(bundle_path)) {
             // Javascript sources
-            bundle = gulp
-                .src(bundle_path)
-                .pipe(es.map(function (file, cb) {
-                    if (typeof(bundle_config.expose) == 'undefined') {
-                        var parts = [
-                            application,
-                            path.basename(file.path, '.js')
-                        ];
-                        bundle_config.expose = parts.join('/');
-                    }
-                    else if (bundle_config.expose === false) {
-                        bundle_config.expose = undefined;
-                    }
-                    return browserify_stream(
-                        file, bundle_config, cb
-                    );
-                }))
-                .pipe(rename(application + path.sep + entry_path));
+            bundle = browserify(bundle_path)
+                .bundle()
+                ;
 
             if (minify) {
                 bundle = bundle
+                    .pipe(vinyl_source(path.basename(bundle_path)))
                     .pipe(vinyl_buffer())
                     .pipe(uglify())
                     .on('error', function (ev) {
                         gulp_util.beep();
                         gulp_util.log('Uglify error:', ev.message);
-                    });
+                    })
+                    ;
             }
+
+            bundle = bundle.pipe(rename(output_path));
         }
         else if (/\.less$/.test(bundle_path)) {
             // LESS sources
+            output_path = path.join(
+                path.dirname(output_path),
+                path.basename(output_path, '.less') + '.css'
+            );
+            console.log(output_path);
             bundle = gulp.src(bundle_path)
                 .pipe(less({}))
+                .pipe(rename(output_path))
                 .on('error', function (ev) {
                     gulp_util.beep();
                     gulp_util.log('LESS error:', ev.message);
                 });
         }
         else {
-            // Copy only sources, from bower_components/etc
-            var bundle = gulp;
+            // Copy only sources
+            bundle = gulp;
             if (bundle_config.src) {
                 bundle = bundle
                     .src(bundle_config.src)
-                    .pipe(rename(application + path.sep + entry_path));
+                    .pipe(rename(output_path));
             }
             else {
                 bundle = bundle
@@ -132,41 +115,6 @@ function build_app_sources (application, minify) {
 
     return es.merge(bundles)
         .pipe(gulp.dest(path.join(pkg_config.name, application, 'static')));
-}
-
-// Browserify build
-function browserify_stream (file, config, cb_output) {
-    bower_resolve.offline = true;
-    bower_resolve.init(function () {
-        var bundle_stream = browserify({
-            paths: ['./']
-        });
-
-        Object.keys(standalone).map(function (module) {
-            bundle_stream = bundle_stream.external(module);
-        });
-
-        if (typeof(config.expose) == 'undefined') {
-            bundle_stream.add(file.path);
-        }
-        else {
-            bundle_stream = bundle_stream.require(
-                file.path, {expose: config.expose}
-            );
-        }
-
-        bundle_stream
-            .transform('debowerify', {ignoreModules: Object.keys(standalone)})
-            .bundle()
-            .on('error', function (ev) {
-                gulp_util.beep();
-                gulp_util.log('Browserify error:', ev.message);
-            })
-            .pipe(vinyl_source(path.basename(file.path)))
-            .pipe(es.map(function (data, cb_inner) {
-                cb_output(null, data);
-            }));
-    });
 }
 
 // Build standalone vendor modules

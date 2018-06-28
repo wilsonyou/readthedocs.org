@@ -30,7 +30,7 @@ function init() {
     /// This is necessary on older versions of the RTD theme (<0.4.0)
     /// and on themes other then the RTD theme (used for the version menu)
     if ((rtd.builder === undefined || rtd.builder === 'sphinx') && window.SphinxRtdTheme === undefined) {
-        sphinx_theme = require('sphinx-rtd-theme');  // eslint-disable-line global-require
+        sphinx_theme = require('sphinx_rtd_theme');  // eslint-disable-line global-require
 
         var theme = sphinx_theme.ThemeNav;
 
