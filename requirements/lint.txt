@@ -1,7 +1,7 @@
 -r pip.txt
-astroid==1.6.4
-pylint==1.9.1
+astroid==1.6.5
+pylint==1.9.2
 pylint-django==0.11.1
 pylint-celery==0.3
-prospector==0.12.10
+prospector==0.12.11
 pyflakes==2.0.0
