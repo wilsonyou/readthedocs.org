@@ -24,7 +24,8 @@ django-extensions==2.1.0
 djangorestframework==3.6.4
 
 # Filtering for the REST API
-django-filter==2.0.0
+# django-filter>=2.0.0 is not compatible with Py2
+django-filter==1.1.0
 
 django-vanilla-views==1.0.5
 jsonfield==2.0.2
