@@ -4,11 +4,11 @@ django-dynamic-fixture==2.0.0
 
 # 3.6.1 and >3.2.5 is incompatible
 # with pytest-describe 0.11.0
-pytest==3.6.2
+pytest==3.6.3
 pytest-django==3.3.2
 pytest-describe==0.11.1
 pytest-xdist==1.22.2
-apipkg==1.4
+apipkg==1.5
 execnet==1.5.0
 
 # Mercurial 4.3 and newer require Python 2.7

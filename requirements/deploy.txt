@@ -1,6 +1,6 @@
 -r pip.txt
 psycopg2==2.7.5
-gunicorn==19.8.1
+gunicorn==19.9.0
 pysolr==3.7.0
 django-redis-cache==1.7.1
 django-mailgun==0.9.1
