@@ -11,7 +11,7 @@ from readthedocs.projects.exceptions import RepositoryError
 from readthedocs.projects.models import Project, Feature
 from readthedocs.rtd_tests.base import RTDTestCase
 
-from readthedocs.rtd_tests.utils import create_git_tag, make_test_git, make_test_hg
+from readthedocs.rtd_tests.utils import create_git_branch, create_git_tag, make_test_git, make_test_hg
 
 
 class TestGitBackend(RTDTestCase):
@@ -29,30 +29,34 @@ class TestGitBackend(RTDTestCase):
         )
         self.project.users.add(self.eric)
 
-    def test_parse_branches(self):
-        data = """
-        develop
-        master
-        release/2.0.0
-        origin/2.0.X
-        origin/HEAD -> origin/master
-        origin/master
-        origin/release/2.0.0
-        origin/release/foo/bar
-        """
-
-        expected_ids = [
-            ('develop', 'develop'),
-            ('master', 'master'),
-            ('release/2.0.0', 'release/2.0.0'),
-            ('origin/2.0.X', '2.0.X'),
-            ('origin/master', 'master'),
-            ('origin/release/2.0.0', 'release/2.0.0'),
-            ('origin/release/foo/bar', 'release/foo/bar'),
+    def test_git_branches(self):
+        repo_path = self.project.repo
+        default_branches = [
+            # comes from ``make_test_git`` function
+            'submodule',
+            'relativesubmodule',
+            'invalidsubmodule',
         ]
-        given_ids = [(x.identifier, x.verbose_name) for x in
-                     self.project.vcs_repo().parse_branches(data)]
-        self.assertEqual(expected_ids, given_ids)
+        branches = [
+            'develop',
+            'master',
+            '2.0.X',
+            'release/2.0.0',
+            'release/foo/bar',
+            'release-ünîø∂é',
+        ]
+        for branch in branches:
+            create_git_branch(repo_path, branch)
+
+        repo = self.project.vcs_repo()
+        # We aren't cloning the repo,
+        # so we need to hack the repo path
+        repo.working_dir = repo_path
+
+        self.assertEqual(
+            set(branches + default_branches),
+            {branch.verbose_name for branch in repo.branches},
+        )
 
     def test_git_checkout(self):
         repo = self.project.vcs_repo()
@@ -70,7 +74,7 @@ class TestGitBackend(RTDTestCase):
         repo.working_dir = repo_path
         self.assertEqual(
             set(['v01', 'v02', 'release-ünîø∂é']),
-            set(vcs.verbose_name for vcs in repo.tags)
+            {vcs.verbose_name for vcs in repo.tags},
         )
 
     def test_check_for_submodules(self):
